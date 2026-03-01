@@ -1,0 +1,40 @@
+name: ha_printsentry
+configuration:
+  rtsp_url:
+    name: RTSP URL
+    description: RTSP stream URL for your printer camera
+  check_interval_sec:
+    name: Check interval (seconds)
+    description: How often to capture and classify a frame
+  ollama_base_url:
+    name: Ollama base URL
+    description: URL for the remote Ollama server
+  ollama_model:
+    name: Ollama model
+    description: Vision-capable model installed on remote Ollama
+  ollama_timeout_sec:
+    name: Ollama timeout (seconds)
+  history_size:
+    name: History size
+  unhealthy_consecutive_threshold:
+    name: Unhealthy consecutive threshold
+  log_level:
+    name: Log level
+  dashboard_url:
+    name: Dashboard URL
+  pushover_user_key:
+    name: Pushover user key
+  pushover_app_token:
+    name: Pushover app token
+  pushover_priority:
+    name: Pushover priority
+  pushover_sound:
+    name: Pushover sound
+  pushover_device:
+    name: Pushover device
+  pushover_retry_sec:
+    name: Pushover retry seconds
+  pushover_expire_sec:
+    name: Pushover expire seconds
+  pushover_min_notification_interval_sec:
+    name: Pushover minimum notification interval (seconds)
