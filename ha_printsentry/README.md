@@ -6,11 +6,21 @@ This add-on runs `ha_printsentry` inside Home Assistant Supervisor.
 
 Set options in the add-on UI:
 
-- `rtsp_url`
+- `rtsp_url` for single-printer mode
+- `printers` JSON for multi-printer mode
 - `ollama_base_url`
 - `ollama_model`
 - `check_interval_sec`
 - Optional Pushover keys/tuning fields
+
+Example `printers` value:
+
+```json
+[
+  {"id":"mk4","name":"Prusa MK4","rtsp_url":"rtsp://mk4/stream"},
+  {"id":"p1s","name":"Bambu P1S","rtsp_url":"rtsp://p1s/stream"}
+]
+```
 
 ## Notes
 

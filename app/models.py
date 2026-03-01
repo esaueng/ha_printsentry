@@ -32,6 +32,9 @@ class VisionResult(BaseModel):
 
 class InferenceRecord(BaseModel):
     id: int | None = None
+    printer_id: str = "printer-1"
+    printer_name: str = "Printer 1"
+    frame_path: str | None = None
     ts: datetime
     status: Status
     confidence: float
@@ -41,6 +44,8 @@ class InferenceRecord(BaseModel):
 
 
 class LatestStatusResponse(BaseModel):
+    printer_id: str
+    printer_name: str
     ts: datetime | None
     status: Status
     confidence: float
@@ -51,7 +56,26 @@ class LatestStatusResponse(BaseModel):
 
 
 class HistoryResponse(BaseModel):
+    printer_id: str
+    printer_name: str
     items: list[InferenceRecord]
+
+
+class PrinterStatusResponse(BaseModel):
+    printer_id: str
+    printer_name: str
+    ts: datetime | None
+    status: Status
+    confidence: float
+    reason: str
+    incident_active: bool
+    unhealthy_consecutive: int
+    last_notification_ts: datetime | None
+    frame_url: str
+
+
+class PrintersResponse(BaseModel):
+    items: list[PrinterStatusResponse]
 
 
 class IncidentState(BaseModel):

@@ -47,12 +47,20 @@ class PushoverNotifier:
             return True
         return (now - last_notification_ts) >= timedelta(seconds=self.min_interval_sec)
 
-    async def send_alert(self, status: str, confidence: float, reason: str, ts: datetime) -> bool:
+    async def send_alert(
+        self,
+        status: str,
+        confidence: float,
+        reason: str,
+        ts: datetime,
+        printer_name: str,
+    ) -> bool:
         if not self.enabled:
             LOGGER.warning("Pushover is not configured; skipping notification")
             return False
 
         message = (
+            f"Printer: {printer_name}\n"
             f"Status: {status}\n"
             f"Confidence: {confidence:.2f}\n"
             f"Reason: {reason}\n"
@@ -62,7 +70,7 @@ class PushoverNotifier:
         payload = {
             "token": self.app_token,
             "user": self.user_key,
-            "title": "ha_printsentry Alert: Print Unhealthy",
+            "title": f"ha_printsentry Alert: {printer_name} Unhealthy",
             "message": message,
             "priority": self.priority,
             "sound": self.sound,

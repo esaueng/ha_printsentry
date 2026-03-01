@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .capture import capture_frame
-from .config import Settings
+from .config import PrinterTarget, Settings
 from .db import Database, utcnow
 from .incident import update_incident_state
 from .models import InferenceRecord, Status, unknown_result
@@ -18,10 +18,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class PrintSentryWorker:
-    def __init__(self, settings: Settings, db: Database) -> None:
+    def __init__(self, settings: Settings, db: Database, printer: PrinterTarget) -> None:
         self.settings = settings
         self.db = db
-        self.frame_path = Path(settings.latest_frame_path)
+        self.printer = printer
+        self.frame_path = Path(settings.frames_dir) / f"{printer.id}.jpg"
         self.ollama = OllamaClient(settings.ollama_base_url, settings.ollama_model, settings.ollama_timeout_sec)
         self.notifier = PushoverNotifier(
             user_key=settings.pushover_user_key,
@@ -40,10 +41,10 @@ class PrintSentryWorker:
         backoff = 1
         while not self._stop.is_set():
             try:
-                await capture_frame(self.settings.rtsp_url, self.frame_path)
+                await capture_frame(self.printer.rtsp_url, self.frame_path)
                 backoff = 1
             except Exception as exc:  # noqa: BLE001
-                LOGGER.exception("RTSP capture failed: %s", exc)
+                LOGGER.exception("RTSP capture failed for %s: %s", self.printer.name, exc)
                 await asyncio.sleep(min(backoff, 60))
                 backoff = min(backoff * 2, 60)
                 continue
@@ -67,7 +68,7 @@ class PrintSentryWorker:
         return unknown_result("Inference failed after retries or JSON parse failure")
 
     async def _store_and_handle(self, result):
-        state = await self.db.get_incident_state()
+        state = await self.db.get_incident_state(self.printer.id, self.printer.name)
         was_active = bool(state["active"])
         unhealthy_consecutive = int(state["unhealthy_consecutive"])
         last_notification_ts = (
@@ -94,11 +95,14 @@ class PrintSentryWorker:
                     confidence=result.confidence,
                     reason=result.reason,
                     ts=now,
+                    printer_name=self.printer.name,
                 )
                 if sent:
                     last_notification_ts = now
 
         await self.db.set_incident_state(
+            printer_id=self.printer.id,
+            printer_name=self.printer.name,
             active=transition.active,
             unhealthy_consecutive=transition.unhealthy_consecutive,
             incident_started_at=now if transition.new_incident else None,
@@ -106,6 +110,9 @@ class PrintSentryWorker:
         )
 
         record = InferenceRecord(
+            printer_id=self.printer.id,
+            printer_name=self.printer.name,
+            frame_path=str(self.frame_path),
             ts=now,
             status=result.status,
             confidence=result.confidence,
@@ -114,7 +121,7 @@ class PrintSentryWorker:
             incident_active=transition.active,
         )
         await self.db.insert_history(record)
-        await self.db.trim_history(self.settings.history_size)
+        await self.db.trim_history(self.settings.history_size, self.printer.id)
 
     def stop(self) -> None:
         self._stop.set()

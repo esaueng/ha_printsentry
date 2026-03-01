@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from .printers import PrinterTarget, parse_printers_config
 
 
 class Settings(BaseSettings):
@@ -6,6 +10,7 @@ class Settings(BaseSettings):
 
     app_name: str = "ha_printsentry"
     rtsp_url: str = "rtsp://example"
+    printers: str = ""
     check_interval_sec: int = 2
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llava"
@@ -25,8 +30,12 @@ class Settings(BaseSettings):
 
     data_dir: str = "/data"
     latest_frame_path: str = "/data/latest.jpg"
+    frames_dir: str = "/data/frames"
     db_path: str = "/data/ha_printsentry.db"
     dashboard_url: str = "http://localhost:8000"
+
+    def configured_printers(self) -> list[PrinterTarget]:
+        return parse_printers_config(self.printers, self.rtsp_url)
 
 
 settings = Settings()

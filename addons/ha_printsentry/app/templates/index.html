@@ -7,39 +7,103 @@
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-  <main class="container">
-    <h1>ha_printsentry</h1>
-    <section class="panel">
-      <h2>Current Status</h2>
-      {% if latest %}
-        <p class="badge {{ latest.status.value.lower() }}">{{ latest.status.value }}</p>
-        <p><strong>Updated:</strong> {{ latest.ts }}</p>
-        <p><strong>Confidence:</strong> {{ '%.2f'|format(latest.confidence) }}</p>
-        <p><strong>Reason:</strong> {{ latest.reason }}</p>
-      {% else %}
-        <p class="badge unknown">UNKNOWN</p>
-        <p>No inferences yet.</p>
-      {% endif %}
-      <p><strong>Incident Active:</strong> {{ incident_active }}</p>
-      <p><strong>Consecutive Unhealthy:</strong> {{ unhealthy_consecutive }}</p>
-      <p><strong>Last Notification:</strong> {{ last_notification_ts or 'N/A' }}</p>
-    </section>
+  <main class="dashboard">
+    <header class="hero">
+      <div class="hero-title-wrap">
+        <p class="kicker">Print Monitoring</p>
+        <h1>{{ app_name }}</h1>
+        <p class="subtitle">Multi-printer health checks with live camera snapshots and incident tracking.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat healthy">
+          <span class="stat-label">Healthy</span>
+          <span class="stat-value">{{ status_counts.healthy }}</span>
+        </div>
+        <div class="stat unhealthy">
+          <span class="stat-label">Unhealthy</span>
+          <span class="stat-value">{{ status_counts.unhealthy }}</span>
+        </div>
+        <div class="stat unknown">
+          <span class="stat-label">Unknown</span>
+          <span class="stat-value">{{ status_counts.unknown }}</span>
+        </div>
+      </div>
+    </header>
 
-    <section class="panel">
-      <h2>Latest Frame</h2>
-      <img class="frame" src="/api/frame" alt="Latest printer frame" />
-    </section>
+    <section class="printer-grid">
+      {% for card in printer_cards %}
+        {% set status = card.latest.status.value if card.latest else card.status %}
+        <article class="printer-card">
+          <div class="card-head">
+            <div>
+              <p class="printer-id">{{ card.id }}</p>
+              <h2>{{ card.name }}</h2>
+            </div>
+            <span class="badge {{ status.lower() }}">{{ status }}</span>
+          </div>
 
-    <section class="panel">
-      <h2>Recent History</h2>
-      <ul>
-        {% for item in history %}
-          <li>
-            <strong>{{ item.ts }}</strong> - {{ item.status.value }} ({{ '%.2f'|format(item.confidence) }}) : {{ item.reason }}
-          </li>
-        {% endfor %}
-      </ul>
+          <div class="frame-wrap">
+            <img
+              class="frame live-frame"
+              src="{{ card.frame_url }}?v={{ updated_at }}"
+              data-src="{{ card.frame_url }}"
+              alt="Latest frame for {{ card.name }}"
+            />
+          </div>
+
+          <dl class="meta-grid">
+            <div>
+              <dt>Updated</dt>
+              <dd>{{ card.latest.ts if card.latest else "N/A" }}</dd>
+            </div>
+            <div>
+              <dt>Confidence</dt>
+              <dd>{{ '%.2f'|format(card.latest.confidence) if card.latest else "0.00" }}</dd>
+            </div>
+            <div>
+              <dt>Incident Active</dt>
+              <dd>{{ card.incident_active }}</dd>
+            </div>
+            <div>
+              <dt>Consecutive Unhealthy</dt>
+              <dd>{{ card.unhealthy_consecutive }}</dd>
+            </div>
+            <div>
+              <dt>Last Notification</dt>
+              <dd>{{ card.last_notification_ts or "N/A" }}</dd>
+            </div>
+          </dl>
+
+          <p class="reason">{{ card.latest.reason if card.latest else "No inferences yet." }}</p>
+
+          <h3>Recent History</h3>
+          {% if card.history %}
+            <ul class="history-list">
+              {% for item in card.history %}
+                <li>
+                  <span class="history-ts">{{ item.ts }}</span>
+                  <span class="history-status {{ item.status.value.lower() }}">{{ item.status.value }}</span>
+                  <span class="history-confidence">{{ '%.2f'|format(item.confidence) }}</span>
+                  <span class="history-reason">{{ item.reason }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="empty">No history yet.</p>
+          {% endif %}
+        </article>
+      {% endfor %}
     </section>
   </main>
+  <script>
+    const refreshFrames = () => {
+      const now = Date.now();
+      document.querySelectorAll(".live-frame").forEach((img) => {
+        const base = img.dataset.src;
+        img.src = `${base}?v=${now}`;
+      });
+    };
+    setInterval(refreshFrames, 5000);
+  </script>
 </body>
 </html>

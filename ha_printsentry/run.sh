@@ -12,6 +12,7 @@ opts = json.loads(options_path.read_text()) if options_path.exists() else {}
 
 mapping = {
     'rtsp_url': 'RTSP_URL',
+    'printers': 'PRINTERS',
     'check_interval_sec': 'CHECK_INTERVAL_SEC',
     'ollama_base_url': 'OLLAMA_BASE_URL',
     'ollama_model': 'OLLAMA_MODEL',

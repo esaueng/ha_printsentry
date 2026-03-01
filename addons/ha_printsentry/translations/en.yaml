@@ -2,7 +2,10 @@ name: ha_printsentry
 configuration:
   rtsp_url:
     name: RTSP URL
-    description: RTSP stream URL for your printer camera
+    description: Single-printer fallback RTSP URL (leave blank when using Printers JSON)
+  printers:
+    name: Printers JSON
+    description: JSON array of printers, e.g. [{"id":"mk4","name":"Prusa MK4","rtsp_url":"rtsp://..."}]
   check_interval_sec:
     name: Check interval (seconds)
     description: How often to capture and classify a frame

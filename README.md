@@ -1,17 +1,17 @@
 # ha_printsentry
 
-`ha_printsentry` is a local, Dockerized Home Assistant Add-on–style service that monitors a 3D printer RTSP camera stream and classifies print health as `HEALTHY` or `UNHEALTHY` using a **remote Ollama vision model** over HTTP.
+`ha_printsentry` is a local, Dockerized Home Assistant Add-on–style service that monitors one or more 3D printer RTSP camera streams and classifies print health as `HEALTHY` or `UNHEALTHY` using a **remote Ollama vision model** over HTTP.
 
 ## Features
 
-- RTSP frame capture using `ffmpeg`
+- RTSP frame capture using `ffmpeg` (single or multi-printer)
 - Vision inference through remote Ollama (`OLLAMA_BASE_URL`)
 - Strict JSON parsing with schema validation (Pydantic)
 - Exponential-backoff retries for RTSP disconnects and Ollama network failures
 - Incident logic based on consecutive UNHEALTHY checks
 - Optional Pushover notifications with rate limiting
-- FastAPI REST API + simple dashboard UI
-- SQLite-backed history + incident state persistence
+- FastAPI REST API + dashboard UI with per-printer cards and live frame refresh
+- SQLite-backed per-printer history + incident state persistence
 
 ## Prerequisites
 
@@ -28,8 +28,11 @@
 cp .env.example .env
 ```
 
-2. Edit `.env` and set:
-   - `RTSP_URL=rtsp://...`
+2. Edit `.env` and set one of:
+   - Single printer: `RTSP_URL=rtsp://...`
+   - Multiple printers:
+     - `RTSP_URL=`
+     - `PRINTERS=[{"id":"mk4","name":"Prusa MK4","rtsp_url":"rtsp://mk4/stream"},{"id":"p1s","name":"Bambu P1S","rtsp_url":"rtsp://p1s/stream"}]`
    - `OLLAMA_BASE_URL=http://<ollama-host>:11434`
    - `OLLAMA_MODEL=llava` (or your installed vision model)
 
@@ -43,7 +46,7 @@ docker compose up -d --build
    - Dashboard: http://localhost:8000/
    - API status: http://localhost:8000/api/status
 
-5. After updating `RTSP_URL`, restart app:
+5. After updating stream config (`RTSP_URL` or `PRINTERS`), restart app:
 
 ```bash
 docker compose restart app
@@ -68,6 +71,7 @@ Notification behavior:
 See `.env.example` for full configuration. Key values:
 
 - `RTSP_URL`
+- `PRINTERS` (JSON array for multi-printer mode)
 - `CHECK_INTERVAL_SEC`
 - `OLLAMA_BASE_URL`
 - `OLLAMA_MODEL`
@@ -78,9 +82,10 @@ See `.env.example` for full configuration. Key values:
 
 ## API Endpoints
 
-- `GET /api/status` latest status payload
-- `GET /api/history?limit=N` recent history (capped by `HISTORY_SIZE`)
-- `GET /api/frame` latest captured frame JPEG
+- `GET /api/printers` status summary for all configured printers
+- `GET /api/status?printer_id=<id>` latest status payload for one printer
+- `GET /api/history?printer_id=<id>&limit=N` recent history for one printer (capped by `HISTORY_SIZE`)
+- `GET /api/frame/{printer_id}` latest captured frame JPEG for a printer
 - `POST /api/printer/pause` stub (501)
 - `POST /api/printer/cancel` stub (501)
 
