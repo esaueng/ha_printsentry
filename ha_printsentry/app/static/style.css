@@ -1,0 +1,8 @@
+body { font-family: Arial, sans-serif; background:#f5f5f5; margin:0; }
+.container { max-width:900px; margin:0 auto; padding:1rem; }
+.panel { background:#fff; padding:1rem; border-radius:8px; margin-bottom:1rem; }
+.badge { display:inline-block; padding:.4rem .7rem; border-radius:999px; color:#fff; font-weight:bold; }
+.badge.healthy { background:#2e7d32; }
+.badge.unhealthy { background:#c62828; }
+.badge.unknown { background:#616161; }
+.frame { max-width:100%; border:1px solid #ddd; border-radius:6px; }

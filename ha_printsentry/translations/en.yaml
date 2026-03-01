@@ -1,0 +1,24 @@
+name: ha_printsentry
+configuration:
+  rtsp_url:
+    name: RTSP URL
+    description: RTSP stream URL for your printer camera
+  check_interval_sec:
+    name: Check interval (seconds)
+    description: How often to capture and classify a frame
+  ollama_base_url:
+    name: Ollama base URL
+    description: URL for the remote Ollama server
+  ollama_model:
+    name: Ollama model
+    description: Vision-capable model installed on remote Ollama
+  ollama_timeout_sec:
+    name: Ollama timeout (seconds)
+  history_size:
+    name: History size
+  unhealthy_consecutive_threshold:
+    name: Unhealthy consecutive threshold
+  log_level:
+    name: Log level
+  dashboard_url:
+    name: Dashboard URL

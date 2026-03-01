@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ha_printsentry Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>ha_printsentry</h1>
+    <section class="panel">
+      <h2>Current Status</h2>
+      {% if latest %}
+        <p class="badge {{ latest.status.value.lower() }}">{{ latest.status.value }}</p>
+        <p><strong>Updated:</strong> {{ latest.ts }}</p>
+        <p><strong>Confidence:</strong> {{ '%.2f'|format(latest.confidence) }}</p>
+        <p><strong>Reason:</strong> {{ latest.reason }}</p>
+      {% else %}
+        <p class="badge unknown">UNKNOWN</p>
+        <p>No inferences yet.</p>
+      {% endif %}
+      <p><strong>Incident Active:</strong> {{ incident_active }}</p>
+      <p><strong>Consecutive Unhealthy:</strong> {{ unhealthy_consecutive }}</p>
+    </section>
+
+    <section class="panel">
+      <h2>Latest Frame</h2>
+      <img class="frame" src="/api/frame" alt="Latest printer frame" />
+    </section>
+
+    <section class="panel">
+      <h2>Recent History</h2>
+      <ul>
+        {% for item in history %}
+          <li>
+            <strong>{{ item.ts }}</strong> - {{ item.status.value }} ({{ '%.2f'|format(item.confidence) }}) : {{ item.reason }}
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
