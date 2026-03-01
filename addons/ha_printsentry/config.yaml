@@ -1,0 +1,58 @@
+name: ha_printsentry
+slug: ha_printsentry
+description: Monitor a 3D printer RTSP stream and classify print health using a remote Ollama vision model.
+version: "0.2.0"
+url: "https://github.com/example/ha_printsentry"
+arch:
+  - amd64
+  - aarch64
+  - armv7
+startup: services
+boot: auto
+init: false
+ingress: true
+ingress_port: 8000
+panel_icon: mdi:printer-3d
+map:
+  - addon_config:rw
+  - share:rw
+ports:
+  8000/tcp: null
+ports_description:
+  8000/tcp: ha_printsentry web UI/API (optional if using ingress)
+options:
+  rtsp_url: "rtsp://your-printer-camera/stream"
+  check_interval_sec: 2
+  ollama_base_url: "http://ollama-host:11434"
+  ollama_model: "llava"
+  ollama_timeout_sec: 30
+  history_size: 200
+  unhealthy_consecutive_threshold: 3
+  log_level: "INFO"
+  dashboard_url: "http://homeassistant.local:8123"
+  pushover_user_key: ""
+  pushover_app_token: ""
+  pushover_priority: 0
+  pushover_sound: "pushover"
+  pushover_device: ""
+  pushover_retry_sec: null
+  pushover_expire_sec: null
+  pushover_min_notification_interval_sec: 300
+schema:
+  rtsp_url: str
+  check_interval_sec: int(1,3600)
+  ollama_base_url: str
+  ollama_model: str
+  ollama_timeout_sec: int(1,300)
+  history_size: int(10,5000)
+  unhealthy_consecutive_threshold: int(1,50)
+  log_level: list(DEBUG|INFO|WARNING|ERROR|CRITICAL)
+  dashboard_url: str
+  pushover_user_key: str?
+  pushover_app_token: str?
+  pushover_priority: int(-2,2)
+  pushover_sound: str?
+  pushover_device: str?
+  pushover_retry_sec: int?
+  pushover_expire_sec: int?
+  pushover_min_notification_interval_sec: int(0,86400)
