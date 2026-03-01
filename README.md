@@ -40,6 +40,20 @@ After pulling latest changes, remove and re-add the repository in Home Assistant
 ## Docker Compose Deployment
 
 ### Prerequisites
+`ha_printsentry` is a local, Dockerized Home Assistant Add-on–style service that monitors a 3D printer RTSP camera stream and classifies print health as `HEALTHY` or `UNHEALTHY` using a **remote Ollama vision model** over HTTP.
+
+## Features
+
+- RTSP frame capture using `ffmpeg`
+- Vision inference through remote Ollama (`OLLAMA_BASE_URL`)
+- Strict JSON parsing with schema validation (Pydantic)
+- Exponential-backoff retries for RTSP disconnects and Ollama network failures
+- Incident logic based on consecutive UNHEALTHY checks
+- Optional Pushover notifications with rate limiting
+- FastAPI REST API + simple dashboard UI
+- SQLite-backed history + incident state persistence
+
+## Prerequisites
 
 1. Docker + Docker Compose installed.
 2. A reachable remote Ollama server with a vision-capable model installed.
@@ -47,6 +61,7 @@ After pulling latest changes, remove and re-add the repository in Home Assistant
    - On Ollama host, ensure model exists: `ollama pull <model>`
 
 ### Quick Start
+## Quick Start
 
 1. Copy environment config:
 
@@ -85,6 +100,32 @@ docker compose restart app
 - Optional Pushover notifications with rate limiting
 - FastAPI REST API + simple dashboard UI
 - SQLite-backed history + incident state persistence
+## Pushover Alerts (optional)
+
+Set both values in `.env` to enable notifications:
+
+- `PUSHOVER_USER_KEY`
+- `PUSHOVER_APP_TOKEN`
+
+Notification behavior:
+- Triggers when UNHEALTHY is seen `UNHEALTHY_CONSECUTIVE_THRESHOLD` times consecutively.
+- Sends one notification per incident.
+- Additional notifications are blocked until either:
+  - `PUSHOVER_MIN_NOTIFICATION_INTERVAL_SEC` has passed, or
+  - a HEALTHY result resets/ends the incident and a new incident begins.
+
+## Environment Variables
+
+See `.env.example` for full configuration. Key values:
+
+- `RTSP_URL`
+- `CHECK_INTERVAL_SEC`
+- `OLLAMA_BASE_URL`
+- `OLLAMA_MODEL`
+- `OLLAMA_TIMEOUT_SEC`
+- `HISTORY_SIZE`
+- `UNHEALTHY_CONSECUTIVE_THRESHOLD`
+- `LOG_LEVEL`
 
 ## API Endpoints
 
@@ -100,6 +141,7 @@ docker compose restart app
 
 - Check RTSP URL validity and auth.
 - Confirm stream is reachable from Docker host/Home Assistant network.
+- Confirm stream is reachable from Docker host/container network.
 - Inspect logs for ffmpeg errors:
 
 ```bash
@@ -109,6 +151,7 @@ docker compose logs -f app
 ### Ollama Connectivity
 
 - Verify `OLLAMA_BASE_URL` is reachable from the app container/add-on.
+- Verify `OLLAMA_BASE_URL` is reachable from the app container.
 - Confirm model is installed on remote host:
 
 ```bash
