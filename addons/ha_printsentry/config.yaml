@@ -1,14 +1,12 @@
 name: ha_printsentry
 slug: ha_printsentry
 description: Monitor a 3D printer RTSP stream and classify print health using a remote Ollama vision model.
-version: "0.2.2"
-url: "https://github.com/esaueng/ha_printsentry"
+version: "0.2.0"
+url: "https://github.com/example/ha_printsentry"
 arch:
   - amd64
   - aarch64
   - armv7
-  - armhf
-  - i386
 startup: services
 boot: auto
 init: false
@@ -52,7 +50,7 @@ schema:
   dashboard_url: str
   pushover_user_key: str?
   pushover_app_token: str?
-  pushover_priority: int
+  pushover_priority: int(-2,2)
   pushover_sound: str?
   pushover_device: str?
   pushover_retry_sec: int?
