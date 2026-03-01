@@ -50,7 +50,7 @@ schema:
   dashboard_url: str
   pushover_user_key: str?
   pushover_app_token: str?
-  pushover_priority: int(-2,2)
+  pushover_priority: list(-2|-1|0|1|2)
   pushover_sound: str?
   pushover_device: str?
   pushover_retry_sec: int?
