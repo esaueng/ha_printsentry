@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import logging
+import contextlib
 from contextlib import asynccontextmanager
+from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi import Request
 
 from .config import settings
 from .db import Database
@@ -58,6 +60,7 @@ async def get_status():
             reason="No inferences yet",
             incident_active=bool(state["active"]),
             unhealthy_consecutive=int(state["unhealthy_consecutive"]),
+            last_notification_ts=datetime.fromisoformat(state["last_notification_ts"]) if state["last_notification_ts"] else None,
         )
 
     return LatestStatusResponse(
@@ -67,6 +70,7 @@ async def get_status():
         reason=latest.reason,
         incident_active=bool(state["active"]),
         unhealthy_consecutive=int(state["unhealthy_consecutive"]),
+        last_notification_ts=datetime.fromisoformat(state["last_notification_ts"]) if state["last_notification_ts"] else None,
     )
 
 
@@ -108,5 +112,6 @@ async def dashboard(request: Request):
             "history": history,
             "incident_active": bool(state["active"]),
             "unhealthy_consecutive": int(state["unhealthy_consecutive"]),
+            "last_notification_ts": state["last_notification_ts"],
         },
     )

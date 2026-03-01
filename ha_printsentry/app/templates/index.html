@@ -22,6 +22,7 @@
       {% endif %}
       <p><strong>Incident Active:</strong> {{ incident_active }}</p>
       <p><strong>Consecutive Unhealthy:</strong> {{ unhealthy_consecutive }}</p>
+      <p><strong>Last Notification:</strong> {{ last_notification_ts or 'N/A' }}</p>
     </section>
 
     <section class="panel">

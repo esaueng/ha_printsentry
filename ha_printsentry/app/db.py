@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 
 import aiosqlite
@@ -32,14 +33,15 @@ class Database:
                     id INTEGER PRIMARY KEY CHECK (id = 1),
                     active INTEGER NOT NULL,
                     unhealthy_consecutive INTEGER NOT NULL,
-                    incident_started_at TEXT
+                    incident_started_at TEXT,
+                    last_notification_ts TEXT
                 )
                 """
             )
             await db.execute(
                 """
-                INSERT OR IGNORE INTO incident_state (id, active, unhealthy_consecutive, incident_started_at)
-                VALUES (1, 0, 0, NULL)
+                INSERT OR IGNORE INTO incident_state (id, active, unhealthy_consecutive, incident_started_at, last_notification_ts)
+                VALUES (1, 0, 0, NULL, NULL)
                 """
             )
             await db.commit()
@@ -78,7 +80,9 @@ class Database:
     async def get_latest(self) -> InferenceRecord | None:
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
-            cursor = await db.execute("SELECT * FROM inference_history ORDER BY ts DESC LIMIT 1")
+            cursor = await db.execute(
+                "SELECT * FROM inference_history ORDER BY ts DESC LIMIT 1"
+            )
             row = await cursor.fetchone()
         if not row:
             return None
@@ -95,7 +99,9 @@ class Database:
     async def get_history(self, limit: int) -> list[InferenceRecord]:
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
-            cursor = await db.execute("SELECT * FROM inference_history ORDER BY ts DESC LIMIT ?", (limit,))
+            cursor = await db.execute(
+                "SELECT * FROM inference_history ORDER BY ts DESC LIMIT ?", (limit,)
+            )
             rows = await cursor.fetchall()
         return [
             InferenceRecord(
@@ -122,18 +128,20 @@ class Database:
         active: bool,
         unhealthy_consecutive: int,
         incident_started_at: datetime | None,
+        last_notification_ts: datetime | None,
     ) -> None:
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 """
                 UPDATE incident_state
-                SET active = ?, unhealthy_consecutive = ?, incident_started_at = ?
+                SET active = ?, unhealthy_consecutive = ?, incident_started_at = ?, last_notification_ts = ?
                 WHERE id = 1
                 """,
                 (
                     int(active),
                     unhealthy_consecutive,
                     incident_started_at.isoformat() if incident_started_at else None,
+                    last_notification_ts.isoformat() if last_notification_ts else None,
                 ),
             )
             await db.commit()

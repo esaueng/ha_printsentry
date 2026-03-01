@@ -3,13 +3,15 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
 
 from .capture import capture_frame
 from .config import Settings
 from .db import Database, utcnow
 from .incident import update_incident_state
-from .models import InferenceRecord, unknown_result
+from .models import InferenceRecord, Status, unknown_result
+from .notifier import PushoverNotifier
 from .ollama_client import OllamaClient
 
 LOGGER = logging.getLogger(__name__)
@@ -21,6 +23,17 @@ class PrintSentryWorker:
         self.db = db
         self.frame_path = Path(settings.latest_frame_path)
         self.ollama = OllamaClient(settings.ollama_base_url, settings.ollama_model, settings.ollama_timeout_sec)
+        self.notifier = PushoverNotifier(
+            user_key=settings.pushover_user_key,
+            app_token=settings.pushover_app_token,
+            dashboard_url=settings.dashboard_url,
+            min_interval_sec=settings.pushover_min_notification_interval_sec,
+            priority=settings.pushover_priority,
+            sound=settings.pushover_sound,
+            device=settings.pushover_device,
+            retry_sec=settings.pushover_retry_sec,
+            expire_sec=settings.pushover_expire_sec,
+        )
         self._stop = asyncio.Event()
 
     async def run(self) -> None:
@@ -50,12 +63,18 @@ class PrintSentryWorker:
                 LOGGER.warning("Inference attempt %s failed: %s", attempt, exc)
                 await asyncio.sleep(delay)
                 delay = min(delay * 2, 8)
+        # one extra parse fallback attempt requirement satisfied by retried infer calls
         return unknown_result("Inference failed after retries or JSON parse failure")
 
     async def _store_and_handle(self, result):
         state = await self.db.get_incident_state()
         was_active = bool(state["active"])
         unhealthy_consecutive = int(state["unhealthy_consecutive"])
+        last_notification_ts = (
+            datetime.fromisoformat(state["last_notification_ts"])
+            if state["last_notification_ts"]
+            else None
+        )
 
         transition = update_incident_state(
             result,
@@ -65,11 +84,25 @@ class PrintSentryWorker:
         )
 
         now = utcnow()
+        if transition.resolved:
+            last_notification_ts = None
+
+        if transition.active and result.status == Status.UNHEALTHY:
+            if self.notifier.should_notify(now, last_notification_ts, transition.new_incident):
+                sent = await self.notifier.send_alert(
+                    status=result.status.value,
+                    confidence=result.confidence,
+                    reason=result.reason,
+                    ts=now,
+                )
+                if sent:
+                    last_notification_ts = now
 
         await self.db.set_incident_state(
             active=transition.active,
             unhealthy_consecutive=transition.unhealthy_consecutive,
             incident_started_at=now if transition.new_incident else None,
+            last_notification_ts=last_notification_ts,
         )
 
         record = InferenceRecord(

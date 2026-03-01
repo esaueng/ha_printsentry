@@ -1,54 +1,26 @@
 # ha_printsentry
 
-`ha_printsentry` monitors a 3D printer RTSP camera stream and classifies print health as `HEALTHY` or `UNHEALTHY` using a **remote Ollama vision model** over HTTP.
+`ha_printsentry` is a local, Dockerized Home Assistant Add-on–style service that monitors a 3D printer RTSP camera stream and classifies print health as `HEALTHY` or `UNHEALTHY` using a **remote Ollama vision model** over HTTP.
 
-This repository supports both:
-- Docker Compose deployment.
-- Home Assistant Supervisor custom add-on deployment.
+## Features
 
-## Home Assistant Add-on Deployment (Supervisor)
+- RTSP frame capture using `ffmpeg`
+- Vision inference through remote Ollama (`OLLAMA_BASE_URL`)
+- Strict JSON parsing with schema validation (Pydantic)
+- Exponential-backoff retries for RTSP disconnects and Ollama network failures
+- Incident logic based on consecutive UNHEALTHY checks
+- Optional Pushover notifications with rate limiting
+- FastAPI REST API + simple dashboard UI
+- SQLite-backed history + incident state persistence
 
-This repo is a valid custom add-on repository with add-on files under:
-
-- `repository.yaml`
-- `ha_printsentry/config.yaml`
-- `ha_printsentry/Dockerfile`
-- `ha_printsentry/run.sh`
-
-### Install steps
-
-1. In Home Assistant, go to **Settings → Add-ons → Add-on Store**.
-2. Click menu (⋮) → **Repositories**.
-3. Add this repository URL.
-4. Open **ha_printsentry** add-on and click **Install**.
-5. Configure options:
-   - `rtsp_url`
-   - `ollama_base_url`
-   - `ollama_model`
-6. Start add-on and open via **Ingress**.
-
-> This add-on does **not** include Ollama. Your remote Ollama server must already be running and reachable from Home Assistant.
-
-### Add-on repository URL appears as `example`
-
-If Home Assistant shows your repository as `https://github.com/example/ha_printsentry`, it is reading metadata from `repository.yaml` and/or add-on `config.yaml`.
-This repository sets both to the real GitHub URL (`https://github.com/esaueng/ha_printsentry`).
-After pulling latest changes, remove and re-add the repository in Home Assistant to refresh metadata.
-
-### Architecture compatibility
-
-Add-ons are filtered by `arch` in `ha_printsentry/config.yaml`; this repo supports `amd64`, `aarch64`, `armv7`, `armhf`, and `i386`.
-
-## Docker Compose Deployment
-
-### Prerequisites
+## Prerequisites
 
 1. Docker + Docker Compose installed.
 2. A reachable remote Ollama server with a vision-capable model installed.
    - Configure `OLLAMA_BASE_URL` in `.env`.
    - On Ollama host, ensure model exists: `ollama pull <model>`
 
-### Quick Start
+## Quick Start
 
 1. Copy environment config:
 
@@ -71,15 +43,38 @@ docker compose up -d --build
    - Dashboard: http://localhost:8000/
    - API status: http://localhost:8000/api/status
 
-## Features
+5. After updating `RTSP_URL`, restart app:
 
-- RTSP frame capture using `ffmpeg`
-- Vision inference through remote Ollama (`OLLAMA_BASE_URL`)
-- Strict JSON parsing with schema validation (Pydantic)
-- Exponential-backoff retries for RTSP disconnects and Ollama network failures
-- Incident logic based on consecutive UNHEALTHY checks
-- FastAPI REST API + simple dashboard UI
-- SQLite-backed history + incident state persistence
+```bash
+docker compose restart app
+```
+
+## Pushover Alerts (optional)
+
+Set both values in `.env` to enable notifications:
+
+- `PUSHOVER_USER_KEY`
+- `PUSHOVER_APP_TOKEN`
+
+Notification behavior:
+- Triggers when UNHEALTHY is seen `UNHEALTHY_CONSECUTIVE_THRESHOLD` times consecutively.
+- Sends one notification per incident.
+- Additional notifications are blocked until either:
+  - `PUSHOVER_MIN_NOTIFICATION_INTERVAL_SEC` has passed, or
+  - a HEALTHY result resets/ends the incident and a new incident begins.
+
+## Environment Variables
+
+See `.env.example` for full configuration. Key values:
+
+- `RTSP_URL`
+- `CHECK_INTERVAL_SEC`
+- `OLLAMA_BASE_URL`
+- `OLLAMA_MODEL`
+- `OLLAMA_TIMEOUT_SEC`
+- `HISTORY_SIZE`
+- `UNHEALTHY_CONSECUTIVE_THRESHOLD`
+- `LOG_LEVEL`
 
 ## API Endpoints
 
@@ -94,7 +89,7 @@ docker compose up -d --build
 ### RTSP Connectivity
 
 - Check RTSP URL validity and auth.
-- Confirm stream is reachable from Docker host/Home Assistant network.
+- Confirm stream is reachable from Docker host/container network.
 - Inspect logs for ffmpeg errors:
 
 ```bash
@@ -103,7 +98,7 @@ docker compose logs -f app
 
 ### Ollama Connectivity
 
-- Verify `OLLAMA_BASE_URL` is reachable from the app container/add-on.
+- Verify `OLLAMA_BASE_URL` is reachable from the app container.
 - Confirm model is installed on remote host:
 
 ```bash
@@ -114,10 +109,14 @@ ollama pull <model>
 
 ### Logs
 
-- Docker Compose:
-
 ```bash
 docker compose logs -f app
 ```
 
-- Home Assistant add-on logs are available in the add-on UI.
+## Tests
+
+Run locally:
+
+```bash
+pytest
+```

@@ -47,6 +47,7 @@ class LatestStatusResponse(BaseModel):
     reason: str
     incident_active: bool
     unhealthy_consecutive: int
+    last_notification_ts: datetime | None
 
 
 class HistoryResponse(BaseModel):
@@ -57,6 +58,7 @@ class IncidentState(BaseModel):
     active: bool = False
     unhealthy_consecutive: int = 0
     incident_started_at: datetime | None = None
+    last_notification_ts: datetime | None = None
 
 
 class PrinterStubResponse(BaseModel):

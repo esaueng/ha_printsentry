@@ -14,6 +14,15 @@ class Settings(BaseSettings):
     unhealthy_consecutive_threshold: int = 3
     log_level: str = "INFO"
 
+    pushover_user_key: str = ""
+    pushover_app_token: str = ""
+    pushover_priority: int = 0
+    pushover_sound: str = "pushover"
+    pushover_device: str = ""
+    pushover_retry_sec: int | None = None
+    pushover_expire_sec: int | None = None
+    pushover_min_notification_interval_sec: int = 300
+
     data_dir: str = "/data"
     latest_frame_path: str = "/data/latest.jpg"
     db_path: str = "/data/ha_printsentry.db"
